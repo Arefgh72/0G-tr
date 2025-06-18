@@ -38,12 +38,13 @@ except Exception as e:
 print("--- پایان بخش ۲ ---\n")
 
 
-# --- بخش ۳: اتصال به شبکه و آماده‌سازی حساب ---
+# --- بخش ۳: اتصال به شبکه ---
 print("--- بخش ۳: اتصال Web3 و آماده‌سازی حساب ---")
 w3 = None
 user_owner_account = None
 try:
-    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={'timeout': 60.0}))
+    
     if not w3.is_connected():
         raise ConnectionError(f"عدم امکان اتصال به RPC URL: {RPC_URL}")
     user_owner_account = w3.eth.account.from_key(USER_OWNER_PRIVATE_KEY)
@@ -137,14 +138,19 @@ def send_signed_transaction_with_retry(w3_instance, signed_tx, action_name="تر
     return None
 
 def approve_erc20_token(w3_instance, token_contract, spender_address, amount_wei, account, default_gas_approve=100000):
+    last_gas_price = w3_instance.eth.gas_price
     for attempt in range(3):
         try:
             action_name = f"تایید توکن {token_contract.address[:10]}"
             nonce = w3_instance.eth.get_transaction_count(account.address)
-            gas_price = w3_instance.eth.gas_price
             
+            # <<-- تغییر: افزایش قیمت گاز در تلاش‌های مجدد
+            if attempt > 0:
+                last_gas_price = int(last_gas_price * 1.2) # افزایش ۲۰ درصدی
+                print(f"    افزایش قیمت گاز برای تلاش مجدد: {last_gas_price}")
+
             approve_tx_built = token_contract.functions.approve(spender_address, amount_wei).build_transaction({
-                'from': account.address, 'nonce': nonce, 'gasPrice': gas_price, 'chainId': CHAIN_ID
+                'from': account.address, 'nonce': nonce, 'gasPrice': last_gas_price, 'chainId': CHAIN_ID
             })
             try:
                 estimated_gas = w3_instance.eth.estimate_gas(approve_tx_built)
@@ -217,15 +223,20 @@ def attempt_owner_withdrawal(w3_instance, proxy_contract_obj, owner_account_obj,
 
 def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, default_gas_interaction=250000):
     action_name = "تعامل با InteractFeeProxy"
+    last_gas_price = w3.eth.gas_price
     for overall_attempt_num in range(max_overall_tries_for_this_call):
         print(f"\\n  {action_name}: تلاش کلی شماره {overall_attempt_num + 1}/{max_overall_tries_for_this_call}...")
         try:
             current_nonce = w3.eth.get_transaction_count(user_owner_account.address)
-            current_gas_price = w3.eth.gas_price
-            
+
+            # <<-- تغییر: افزایش قیمت گاز در تلاش‌های مجدد
+            if overall_attempt_num > 0:
+                last_gas_price = int(last_gas_price * 1.2) # افزایش ۲۰ درصدی
+                print(f"    افزایش قیمت گاز برای تلاش مجدد: {last_gas_price}")
+
             interact_tx_built = interact_proxy_instance.functions.interactWithFee().build_transaction({
                 'from': user_owner_account.address, 'chainId': CHAIN_ID, 
-                'gasPrice': current_gas_price, 'nonce': current_nonce, 'value': INTERACT_FEE_WEI
+                'gasPrice': last_gas_price, 'nonce': current_nonce, 'value': INTERACT_FEE_WEI
             })
             try:
                 estimated_gas = w3.eth.estimate_gas(interact_tx_built)
@@ -269,12 +280,17 @@ def _execute_single_swap_stage(token_in_contract_obj, token_out_contract_obj, to
     time.sleep(random.uniform(3, 8))
     balance_out_before = get_token_balance(w3, token_out_contract_obj, user_owner_account.address)
 
+    last_gas_price = w3.eth.gas_price
     for attempt in range(3):
         try:
             nonce = w3.eth.get_transaction_count(user_owner_account.address)
-            gas_price = w3.eth.gas_price
-            
-            tx_params = {'from': user_owner_account.address, 'nonce': nonce, 'gasPrice': gas_price, 'chainId': CHAIN_ID, 'value': 0}
+
+            # <<-- تغییر: افزایش قیمت گاز در تلاش‌های مجدد
+            if attempt > 0:
+                last_gas_price = int(last_gas_price * 1.2)
+                print(f"    افزایش قیمت گاز برای تلاش مجدد سواپ: {last_gas_price}")
+
+            tx_params = {'from': user_owner_account.address, 'nonce': nonce, 'gasPrice': last_gas_price, 'chainId': CHAIN_ID, 'value': 0}
             
             if swap_type == "exactInputSingle":
                 params = (token_in_addr, token_out_addr, fee_tier, user_owner_account.address, int(time.time()) + 900, amount_in_wei, 1, 0)
@@ -340,7 +356,8 @@ def run_upload_file_transaction(max_tries=3):
     contract_address = "0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628"
     tx_value = 194000000000000
     function_signature = "0xef3e12dc"
-
+    
+    last_gas_price = w3.eth.gas_price
     for attempt in range(max_tries):
         print(f"  {action_name}: تلاش {attempt + 1}/{max_tries}...")
         try:
@@ -354,13 +371,17 @@ def run_upload_file_transaction(max_tries=3):
             tx_data = function_signature + encoded_params.hex()
             
             nonce = w3.eth.get_transaction_count(user_owner_account.address)
-            gas_price = w3.eth.gas_price
-            
+
+            # <<-- تغییر: افزایش قیمت گاز در تلاش‌های مجدد
+            if attempt > 0:
+                last_gas_price = int(last_gas_price * 1.2)
+                print(f"    افزایش قیمت گاز برای تلاش مجدد آپلود: {last_gas_price}")
+
             upload_tx = {
                 'to': w3.to_checksum_address(contract_address),
                 'from': user_owner_account.address,
                 'nonce': nonce,
-                'gasPrice': gas_price,
+                'gasPrice': last_gas_price,
                 'chainId': CHAIN_ID,
                 'data': tx_data,
                 'value': tx_value,
@@ -397,7 +418,7 @@ def run_loop_level_1(num_interactions_lvl1=10):
         if call_interact_with_fee_function_final():
             successful_count += 1
         if i < num_interactions_lvl1 - 1:
-            time.sleep(random.uniform(10, 30)) # تاخیر بین تراکنش‌های مشابه
+            time.sleep(random.uniform(10, 30))
     print(f"\\n========= پایان لوپ سطح ۱: {successful_count} موفق از {num_interactions_lvl1} ==========")
     return True
 
@@ -421,21 +442,33 @@ def run_swap_loop(initial_usdt_amount_ether=100.0):
     return True
 
 def run_faucet_loop(faucet_gas_limit=100000):
-    print("\\n=== شروع لوپ فاست USDT ===")
     action_name = "تراکنش فاست USDT"
-    try:
-        tx_faucet_params = {
-            'to': USDT_TOKEN_ADDRESS, 'value': 0, 'gas': faucet_gas_limit, 'gasPrice': w3.eth.gas_price,
-            'nonce': w3.eth.get_transaction_count(user_owner_account.address), 'from': user_owner_account.address,
-            'chainId': CHAIN_ID, 'data': "0x1249c58b"
-        }
-        signed_tx_faucet = user_owner_account.sign_transaction(tx_faucet_params)
-        w3.eth.send_raw_transaction(signed_tx_faucet.raw_transaction)
-        print(f"  {action_name}: تراکنش فاست ارسال شد.")
-    except Exception as e:
-        print(f"    خطا در ارسال تراکنش فاست: {e}")
-    print("=== پایان لوپ فاست ===")
-    return True
+    print(f"\\n=== شروع {action_name} ===")
+    last_gas_price = w3.eth.gas_price
+    for attempt in range(3):
+        try:
+            if attempt > 0:
+                last_gas_price = int(last_gas_price * 1.2)
+                print(f"    افزایش قیمت گاز برای فاست: {last_gas_price}")
+            
+            tx_faucet_params = {
+                'to': USDT_TOKEN_ADDRESS, 'value': 0, 'gas': faucet_gas_limit, 'gasPrice': last_gas_price,
+                'nonce': w3.eth.get_transaction_count(user_owner_account.address), 'from': user_owner_account.address,
+                'chainId': CHAIN_ID, 'data': "0x1249c58b"
+            }
+            signed_tx_faucet = user_owner_account.sign_transaction(tx_faucet_params)
+            
+            # برای فاست فقط ارسال می‌کنیم و منتظر رسید نمی‌مانیم
+            w3.eth.send_raw_transaction(signed_tx_faucet.raw_transaction)
+            print(f"  {action_name}: تراکنش ارسال شد.")
+            print("=== پایان لوپ فاست ===")
+            return True # اگر ارسال موفق بود، خارج شو
+        except Exception as e:
+            print(f"    خطا در ارسال تراکنش فاست (تلاش {attempt + 1}): {e}")
+            time.sleep(random.uniform(2,5))
+            
+    print("=== پایان لوپ فاست (ناموفق) ===")
+    return False
 
 def run_loop_level_2(num_interactions_for_lvl1=10, min_usdt=100.0, max_usdt=1000.0):
     print("\\n🔄=============== شروع اجرای run_loop_level_2 ================")
