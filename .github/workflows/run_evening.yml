@@ -26,5 +26,5 @@ jobs:
       - name: Run the main script for Evening
         env:
           MY_PRIVATE_KEY: ${{ secrets.MY_PRIVATE_KEY }}
-          NUM_ITERATIONS: '6' # اجرای عصر با ۸ تکرار
+          NUM_ITERATIONS: '5' # اجرای عصر با ۸ تکرار
         run: python main.py
