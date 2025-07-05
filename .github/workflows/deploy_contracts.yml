@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # برای اجرای دستی
   schedule:
     # اجرا در هر ۱۰ دقیقه
-    - cron: '*/10 * * * *'
+    - cron: '*/30 * * * *'
 
 jobs:
   deploy-job:
