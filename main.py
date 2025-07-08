@@ -18,7 +18,7 @@ print("--- بخش ۱: تعریف متغیرهای شبکه ---")
 TARGET_NETWORK_NAME = "0G Galileo Testnet"
 RPC_URL = "https://evmrpc-testnet.0g.ai"
 CHAIN_ID = 16601
-EXPLORER_URL_TX_FORMAT = "https://chainscan-galileo.0g.ai/tx/{}"
+EXPLORER_URL_TX_FORMAT = "https://chainscan-galileo.0g.ai/tx/0x{}"
 print("--- پایان بخش ۱ ---\n")
 
 # --- بخش ۲: خواندن کلید خصوصی ---
@@ -38,7 +38,7 @@ except Exception as e:
 print("--- پایان بخش ۲ ---\n")
 
 
-# --- بخش ۳: اتصال به شبکه ---
+# --- بخش ۳: اتصال به شبکه و آماده‌سازی حساب ---
 print("--- بخش ۳: اتصال Web3 و آماده‌سازی حساب ---")
 w3 = None
 user_owner_account = None
@@ -142,7 +142,7 @@ def approve_erc20_token(w3_instance, token_contract, spender_address, amount_wei
         try:
             action_name = f"تایید توکن {token_contract.address[:10]}"
             nonce = w3_instance.eth.get_transaction_count(account.address)
-            gas_price = w3.eth.gas_price
+            gas_price = w3_instance.eth.gas_price
             
             if attempt > 0:
                 gas_price = int(gas_price * (1.2**attempt))
@@ -198,7 +198,8 @@ def attempt_owner_withdrawal(w3_instance, proxy_contract_obj, owner_account_obj,
     try:
         proxy_balance_wei = w3_instance.eth.get_balance(proxy_contract_obj.address)
         if proxy_balance_wei == 0:
-            return False
+            print("      موجودی برای برداشت وجود ندارد.")
+            return False # برگرداندن False اگر موجودی صفر است
         
         nonce = w3_instance.eth.get_transaction_count(owner_account_obj.address)
         gas_price = w3.eth.gas_price
@@ -220,6 +221,7 @@ def attempt_owner_withdrawal(w3_instance, proxy_contract_obj, owner_account_obj,
         print(f"      خطای عمومی در برداشت کارمزد: {e}")
         return False
 
+# <<<<<<<<<<<<<<< تغییر اصلی: منطق برداشت به بخش موفقیت منتقل شد >>>>>>>>>>>>>>>>
 def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, default_gas_interaction=250000):
     action_name = "تعامل با InteractFeeProxy"
     for overall_attempt_num in range(max_overall_tries_for_this_call):
@@ -246,24 +248,24 @@ def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, def
             receipt = send_signed_transaction_with_retry(w3, signed_tx_interact, action_name)
             
             if receipt and receipt.status == 1:
-                return True
+                # اگر تراکنش موفق بود، بلافاصله برای برداشت تلاش کن
+                print("  ✅ تراکنش تعامل موفق بود. در حال تلاش برای برداشت کارمزدهای انباشته شده...")
+                time.sleep(random.uniform(3, 8)) # تاخیر کوتاه برای آپدیت شدن وضعیت شبکه
+                
+                withdrawal_success = attempt_owner_withdrawal(w3, interact_proxy_instance, user_owner_account, CHAIN_ID)
+                if withdrawal_success:
+                    print("  ✅ برداشت کارمزد نیز با موفقیت انجام شد.")
+                else:
+                    print("  ⚠️ برداشت کارمزد انجام نشد (یا موجودی برای برداشت وجود نداشت).")
+                
+                return True # بازگرداندن موفقیت کلی
             
             print(f"    تلاش {overall_attempt_num + 1} ناموفق بود. تلاش مجدد...")
             time.sleep(random.uniform(2, 5))
             
-        except (ValueError, Web3RPCError) as e:
-            if "insufficient funds" in str(e).lower():
-                print("    خطای کمبود وجه. تلاش برای برداشت کارمزد...")
-                if attempt_owner_withdrawal(w3, interact_proxy_instance, user_owner_account, CHAIN_ID):
-                    print("      برداشت موفق بود. تلاش مجدد برای تعامل...")
-                    time.sleep(random.uniform(3, 8))
-                else:
-                    return False
-            else:
-                print(f"    خطای '{type(e).__name__}': {e}")
-                time.sleep(random.uniform(2, 5))
         except Exception as e_fatal:
-            print(f"    خطای بسیار پیش‌بینی نشده: {e_fatal}")
+            print(f"    خطای بسیار پیش‌بینی نشده در تعامل: {e_fatal}")
+            # منطق برداشت از بخش خطا حذف شد
             return False
             
     print(f"  --- {action_name} پس از تمام تلاش‌ها ناموفق بود. ---")
@@ -320,7 +322,6 @@ def _execute_single_swap_stage(token_in_contract_obj, token_out_contract_obj, to
             
     return 0
 
-# <<<<<<<<<<<<<<< تغییر: بازگشت به روش پایدار تکرار تراکنش ثابت >>>>>>>>>>>>>>>>
 def run_upload_file_transaction(max_tries=3):
     action_name = "آپلود فایل (تکرار تراکنش ثابت)"
     print(f"\\n--- شروع {action_name} ---")
@@ -419,6 +420,7 @@ def run_faucet_loop(faucet_gas_limit=100000):
                 'chainId': CHAIN_ID, 'data': "0x1249c58b"
             }
             signed_tx_faucet = user_owner_account.sign_transaction(tx_faucet_params)
+            
             w3.eth.send_raw_transaction(signed_tx_faucet.raw_transaction)
             print(f"  {action_name}: تراکنش ارسال شد.")
             print("=== پایان لوپ فاست ===")
