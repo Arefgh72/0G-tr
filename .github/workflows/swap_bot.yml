@@ -1,0 +1,31 @@
+name: 'Round-Trip Swap Bot'
+
+on:
+  # به شما اجازه اجرای دستی را هم می‌دهد
+  workflow_dispatch:
+  
+  schedule:
+    # اجرا در هر ۶ ساعت
+    - cron: '0 */6 * * *'
+
+jobs:
+  swap-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install web3 requests
+
+      - name: Run Swap Script
+        env:
+          MY_PRIVATE_KEY: ${{ secrets.MY_PRIVATE_KEY }}
+        run: python swap_bot.py
