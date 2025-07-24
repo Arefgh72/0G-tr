@@ -2,12 +2,10 @@ import os
 import time
 import random
 from web3 import Web3
-
-# <<-- تغییر اصلی و صحیح اینجاست
 from eth_hash.auto import keccak
 
 # --- بخش ۱: تنظیمات اصلی ---
-OG_SWAP_AMOUNT = 0.01  # مقدار توکن 0G برای سواپ
+OG_SWAP_AMOUNT = 0.01
 DEX_ROUTER_ADDRESS = "0x171931f5670037173B9db13ab83186adAb350cF2"
 EUCLID_TOKEN_ADDRESS = "0x20329026df239A273F25F4383447342171A40673"
 W_OG_ADDRESS = "0xEd28A457a553065123A36e63785Fe6a15286594C" 
@@ -60,13 +58,13 @@ def perform_round_trip_swap():
     try:
         params = (
             Web3.to_checksum_address(W_OG_ADDRESS),
-            Web3.to_checksum_address(TARGET_TOKEN_ADDRESS),
+            Web3.to_checksum_address(EUCLID_TOKEN_ADDRESS), # <<-- اصلاح شد
             FEE_TIER,
             account.address,
-            int(time.time()) + 600, # Deadline: 10 دقیقه آینده
+            int(time.time()) + 600,
             amount_in_wei,
-            0, # amountOutMinimum: صفر برای جلوگیری از خطا
-            0  # sqrtPriceLimitX96: صفر
+            0,
+            0
         )
         nonce = w3.eth.get_transaction_count(account.address)
         tx = dex_contract.functions.exactInputSingle(params).build_transaction({
@@ -125,7 +123,7 @@ def perform_round_trip_swap():
         
         # مرحله ب: خود سواپ
         params_reverse = (
-            Web3.to_checksum_address(TARGET_TOKEN_ADDRESS),
+            Web3.to_checksum_address(EUCLID_TOKEN_ADDRESS), # <<-- اصلاح شد
             Web3.to_checksum_address(W_OG_ADDRESS),
             FEE_TIER,
             account.address,
