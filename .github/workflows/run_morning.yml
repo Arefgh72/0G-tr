@@ -26,5 +26,5 @@ jobs:
       - name: Run the main script for Morning
         env:
           MY_PRIVATE_KEY: ${{ secrets.MY_PRIVATE_KEY }}
-          NUM_ITERATIONS: '4' # اجرای صبح با ۱۰ تکرار
+          NUM_ITERATIONS: '1' # اجرای صبح با ۱۰ تکرار
         run: python main.py
