@@ -271,7 +271,7 @@ def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, def
 def _execute_single_swap_stage(token_in_contract_obj, token_out_contract_obj, token_in_addr, token_out_addr, amount_in_wei, swap_type, action_name, fee_tier=None, path=None, default_gas=700000):
     print(f"\\n    -- شروع مرحله سواپ: {action_name} --")
     if token_in_addr != ETH_TOKEN_ADDRESS and not approve_erc20_token(w3, token_in_contract_obj, dex1_router_contract_updated.address, amount_in_wei, user_owner_account):
-        print("       تایید توکن ناموفق بود. لغو سواپ.")
+        print("        تایید توکن ناموفق بود. لغو سواپ.")
         return 0
         
     time.sleep(random.uniform(3, 8))
@@ -434,8 +434,8 @@ if __name__ == "__main__":
             print(f"\\nاسکریپت با {num_main_loop_iterations_to_run} تکرار اجرا خواهد شد.")
             run_main_loop_level_3(
                 total_main_loops=num_main_loop_iterations_to_run,
-                lvl2_iterations=10,
-                lvl1_interactions=10,
+                lvl2_iterations=4,      # <-- تغییری که خواستید
+                lvl1_interactions=3,    # <-- تغییری که خواستید
                 min_usdt=100.0,
                 max_usdt=1000.0
             )
