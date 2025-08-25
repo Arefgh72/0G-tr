@@ -18,7 +18,7 @@ print("--- بخش ۱: تعریف متغیرهای شبکه ---")
 TARGET_NETWORK_NAME = "0G Galileo Testnet"
 RPC_URL = "https://evmrpc-testnet.0g.ai"
 CHAIN_ID = 16601
-EXPLORER_URL_TX_FORMAT = "https://chainscan-galileo.0g.ai/tx/0x{}"
+EXPLORER_URL_TX_FORMAT = "https://chainscan-galileo.0g.ai/tx/{}"
 print("--- پایان بخش ۱ ---\n")
 
 # --- بخش ۲: خواندن کلید خصوصی ---
@@ -199,7 +199,7 @@ def attempt_owner_withdrawal(w3_instance, proxy_contract_obj, owner_account_obj,
         proxy_balance_wei = w3_instance.eth.get_balance(proxy_contract_obj.address)
         if proxy_balance_wei == 0:
             print("      موجودی برای برداشت وجود ندارد.")
-            return False # برگرداندن False اگر موجودی صفر است
+            return False
         
         nonce = w3_instance.eth.get_transaction_count(owner_account_obj.address)
         gas_price = w3.eth.gas_price
@@ -221,7 +221,6 @@ def attempt_owner_withdrawal(w3_instance, proxy_contract_obj, owner_account_obj,
         print(f"      خطای عمومی در برداشت کارمزد: {e}")
         return False
 
-# <<<<<<<<<<<<<<< تغییر اصلی: منطق برداشت به بخش موفقیت منتقل شد >>>>>>>>>>>>>>>>
 def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, default_gas_interaction=250000):
     action_name = "تعامل با InteractFeeProxy"
     for overall_attempt_num in range(max_overall_tries_for_this_call):
@@ -248,9 +247,8 @@ def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, def
             receipt = send_signed_transaction_with_retry(w3, signed_tx_interact, action_name)
             
             if receipt and receipt.status == 1:
-                # اگر تراکنش موفق بود، بلافاصله برای برداشت تلاش کن
                 print("  ✅ تراکنش تعامل موفق بود. در حال تلاش برای برداشت کارمزدهای انباشته شده...")
-                time.sleep(random.uniform(3, 8)) # تاخیر کوتاه برای آپدیت شدن وضعیت شبکه
+                time.sleep(random.uniform(3, 8))
                 
                 withdrawal_success = attempt_owner_withdrawal(w3, interact_proxy_instance, user_owner_account, CHAIN_ID)
                 if withdrawal_success:
@@ -258,14 +256,13 @@ def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, def
                 else:
                     print("  ⚠️ برداشت کارمزد انجام نشد (یا موجودی برای برداشت وجود نداشت).")
                 
-                return True # بازگرداندن موفقیت کلی
+                return True
             
             print(f"    تلاش {overall_attempt_num + 1} ناموفق بود. تلاش مجدد...")
             time.sleep(random.uniform(2, 5))
             
         except Exception as e_fatal:
             print(f"    خطای بسیار پیش‌بینی نشده در تعامل: {e_fatal}")
-            # منطق برداشت از بخش خطا حذف شد
             return False
             
     print(f"  --- {action_name} پس از تمام تلاش‌ها ناموفق بود. ---")
@@ -273,7 +270,7 @@ def call_interact_with_fee_function_final(max_overall_tries_for_this_call=5, def
 
 def _execute_single_swap_stage(token_in_contract_obj, token_out_contract_obj, token_in_addr, token_out_addr, amount_in_wei, swap_type, action_name, fee_tier=None, path=None, default_gas=700000):
     print(f"\\n    -- شروع مرحله سواپ: {action_name} --")
-    if not approve_erc20_token(w3, token_in_contract_obj, dex1_router_contract_updated.address, amount_in_wei, user_owner_account):
+    if token_in_addr != ETH_TOKEN_ADDRESS and not approve_erc20_token(w3, token_in_contract_obj, dex1_router_contract_updated.address, amount_in_wei, user_owner_account):
         print("       تایید توکن ناموفق بود. لغو سواپ.")
         return 0
         
@@ -290,11 +287,13 @@ def _execute_single_swap_stage(token_in_contract_obj, token_out_contract_obj, to
                 print(f"    افزایش قیمت گاز برای تلاش مجدد سواپ: {gas_price}")
 
             tx_params = {'from': user_owner_account.address, 'nonce': nonce, 'gasPrice': gas_price, 'chainId': CHAIN_ID, 'value': 0}
+            if token_in_addr == ETH_TOKEN_ADDRESS:
+                tx_params['value'] = amount_in_wei
             
             if swap_type == "exactInputSingle":
                 params = (token_in_addr, token_out_addr, fee_tier, user_owner_account.address, int(time.time()) + 900, amount_in_wei, 1, 0)
                 swap_func = dex1_router_contract_updated.functions.exactInputSingle(params)
-            else: # exactInput
+            else:
                 params = (path, user_owner_account.address, int(time.time()) + 900, amount_in_wei, 1)
                 swap_func = dex1_router_contract_updated.functions.exactInput(params)
             
@@ -321,57 +320,6 @@ def _execute_single_swap_stage(token_in_contract_obj, token_out_contract_obj, to
             time.sleep(random.uniform(2, 5))
             
     return 0
-
-def run_upload_file_transaction(max_tries=3):
-    action_name = "آپلود فایل (تکرار تراکنش ثابت)"
-    print(f"\\n--- شروع {action_name} ---")
-
-    contract_address = "0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628"
-    tx_data = "0xef3e12dc000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004290000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002677eefba56a5170c5d3f317bfd0b31c6449c3167441f0be0ed3381df308413700000000000000000000000000000000000000000000000000000000000000002a295b903559152821d7bb67048a24f22cee797b581493d715e6d17e5d4b270a70000000000000000000000000000000000000000000000000000000000000000"
-    tx_value = 194000000000000
-    
-    for attempt in range(max_tries):
-        print(f"  {action_name}: تلاش {attempt + 1}/{max_tries}...")
-        try:
-            nonce = w3.eth.get_transaction_count(user_owner_account.address)
-            gas_price = w3.eth.gas_price
-            
-            if attempt > 0:
-                gas_price = int(gas_price * (1.2**attempt))
-                print(f"    افزایش قیمت گاز برای تلاش مجدد آپلود: {gas_price}")
-
-            upload_tx = {
-                'to': w3.to_checksum_address(contract_address),
-                'from': user_owner_account.address,
-                'nonce': nonce,
-                'gasPrice': gas_price,
-                'chainId': CHAIN_ID,
-                'data': tx_data,
-                'value': tx_value,
-            }
-            try:
-                gas_estimate = w3.eth.estimate_gas(upload_tx)
-                upload_tx['gas'] = int(gas_estimate * 1.2)
-            except Exception as e:
-                print(f"    خطا در تخمین گس برای آپلود: {e}. استفاده از مقدار پیش‌فرض.")
-                upload_tx['gas'] = 500000
-
-            signed_tx = user_owner_account.sign_transaction(upload_tx)
-            receipt = send_signed_transaction_with_retry(w3, signed_tx, action_name)
-            
-            if receipt and receipt.status == 1:
-                print(f"  ✅ {action_name} با موفقیت انجام شد.")
-                return True
-            
-            print(f"    تلاش {attempt + 1} برای آپلود ناموفق بود. تلاش مجدد...")
-            time.sleep(random.uniform(2, 5))
-            
-        except Exception as e:
-            print(f"خطای کلی در حلقه آپلود (تلاش {attempt + 1}): {e}")
-            time.sleep(random.uniform(2, 5))
-            
-    print(f"  ❌ {action_name} پس از تمام تلاش‌ها ناموفق بود.")
-    return False
 
 def run_loop_level_1(num_interactions_lvl1=10):
     print(f"\\n========= شروع لوپ سطح ۱ (تعداد تعاملات: {num_interactions_lvl1}) ==========")
@@ -438,14 +386,6 @@ def run_loop_level_2(num_interactions_for_lvl1=10, min_usdt=100.0, max_usdt=1000
     random_trigger = random.randint(1, 10)
     print(f"  عدد قرعه‌کشی برای آپلود: {random_trigger}")
     
-    upload_before_swap_numbers = {1, 2, 3, 4, 5}
-    upload_after_swap_numbers = {6, 7, 8, 9}
-    
-    if random_trigger in upload_before_swap_numbers:
-        print("  نتیجه قرعه‌کشی: آپلود قبل از سواپ انجام می‌شود.")
-        run_upload_file_transaction()
-        time.sleep(random.uniform(3, 8))
-
     run_loop_level_1(num_interactions_for_lvl1)
     
     time.sleep(random.uniform(3, 8))
@@ -459,14 +399,6 @@ def run_loop_level_2(num_interactions_for_lvl1=10, min_usdt=100.0, max_usdt=1000
         print("👍 لوپ سواپ با موفقیت انجام شد.")
     else:
         print("👎 لوپ سواپ ناموفق بود.")
-
-    if random_trigger in upload_after_swap_numbers:
-        print("  نتیجه قرعه‌کشی: آپلود بعد از سواپ انجام می‌شود.")
-        run_upload_file_transaction()
-        time.sleep(random.uniform(3, 8))
-
-    if random_trigger == 10:
-        print("  نتیجه قرعه‌کشی: در این دور آپلودی انجام نمی‌شود.")
 
     return swap_success
         
@@ -505,7 +437,7 @@ if __name__ == "__main__":
                 lvl2_iterations=10,
                 lvl1_interactions=10,
                 min_usdt=100.0,
-                max_usdt=10000.0
+                max_usdt=1000.0
             )
         else:
             print("تعداد تکرارها 0 است. برنامه اجرا نمی‌شود.")
