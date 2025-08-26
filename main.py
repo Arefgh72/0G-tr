@@ -14,7 +14,7 @@ print("ماژول‌های ضروری پایتون import شدند.")
 # --- بخش ۱: تنظیمات شبکه ---
 print("--- بخش ۱: تعریف متغیرهای شبکه ---")
 TARGET_NETWORK_NAME = "0G Galileo Testnet"
-RPC_URL = "https://evmrpc-testnet.0g.ai"
+RPC_URL = "https://rpc.ankr.com/0g_galileo_testnet_evm"
 CHAIN_ID = 16601
 EXPLORER_URL_TX_FORMAT = "https://chainscan-galileo.0g.ai/tx/{}"
 print("--- پایان بخش ۱ ---\n")
