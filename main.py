@@ -41,7 +41,7 @@ print("--- بخش ۳: اتصال Web3 و آماده‌سازی حساب ---")
 w3 = None
 user_owner_account = None
 try:
-    # <<-- تغییر اصلی: آپدیت کردن نسخه کروم به ورژن دقیق شما -->>
+    # اضافه کردن User-Agent دقیق شما
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.139 Safari/537.36"
     }
@@ -59,6 +59,7 @@ except Exception as e:
     print(f"🚨 خطا در اتصال Web3 یا آماده‌سازی حساب: {e}")
     raise
 print("--- پایان بخش ۳ ---\n")
+
 
 # --- بخش ۴: بارگذاری اطلاعات قراردادها ---
 print("--- بخش ۴: بارگذاری اطلاعات قراردادها ---")
@@ -107,6 +108,7 @@ UPDATED_MINIMAL_DEX_ROUTER_ABI = json.loads(UPDATED_MINIMAL_DEX_ROUTER_ABI_STR)
 DEX1_ROUTER_ADDRESS = w3.to_checksum_address(DEX1_ROUTER_ADDRESS_STR)
 dex1_router_contract_updated = w3.eth.contract(address=DEX1_ROUTER_ADDRESS, abi=UPDATED_MINIMAL_DEX_ROUTER_ABI)
 print("--- پایان بخش ۴ ---\n")
+
 
 # --- بخش ۵: توابع کمکی ---
 def send_signed_transaction_with_retry(w3_instance, signed_tx, action_name="تراکنش", timeout_receipt=300, max_rpc_retries=3, rpc_retry_delay_sec=5):
