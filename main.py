@@ -42,7 +42,7 @@ w3 = None
 user_owner_account = None
 try:
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
     }
     w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={'timeout': 60.0, 'headers': headers}))
     
