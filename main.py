@@ -41,8 +41,9 @@ print("--- بخش ۳: اتصال Web3 و آماده‌سازی حساب ---")
 w3 = None
 user_owner_account = None
 try:
+    # <<-- تغییر اصلی: آپدیت کردن نسخه کروم به ورژن دقیق شما -->>
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.139 Safari/537.36"
     }
     w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={'timeout': 60.0, 'headers': headers}))
     
@@ -58,7 +59,6 @@ except Exception as e:
     print(f"🚨 خطا در اتصال Web3 یا آماده‌سازی حساب: {e}")
     raise
 print("--- پایان بخش ۳ ---\n")
-
 
 # --- بخش ۴: بارگذاری اطلاعات قراردادها ---
 print("--- بخش ۴: بارگذاری اطلاعات قراردادها ---")
@@ -107,7 +107,6 @@ UPDATED_MINIMAL_DEX_ROUTER_ABI = json.loads(UPDATED_MINIMAL_DEX_ROUTER_ABI_STR)
 DEX1_ROUTER_ADDRESS = w3.to_checksum_address(DEX1_ROUTER_ADDRESS_STR)
 dex1_router_contract_updated = w3.eth.contract(address=DEX1_ROUTER_ADDRESS, abi=UPDATED_MINIMAL_DEX_ROUTER_ABI)
 print("--- پایان بخش ۴ ---\n")
-
 
 # --- بخش ۵: توابع کمکی ---
 def send_signed_transaction_with_retry(w3_instance, signed_tx, action_name="تراکنش", timeout_receipt=300, max_rpc_retries=3, rpc_retry_delay_sec=5):
@@ -292,7 +291,7 @@ def _execute_single_swap_stage(token_in_contract_obj, token_out_contract_obj, to
             time.sleep(random.uniform(2, 5))
     return 0
 
-def run_loop_level_1(num_interactions_lvl1=4):
+def run_loop_level_1(num_interactions_lvl1):
     print(f"\\n========= شروع لوپ سطح ۱ (تعداد تعاملات: {num_interactions_lvl1}) ==========")
     successful_count = 0
     for i in range(num_interactions_lvl1):
@@ -383,7 +382,6 @@ if __name__ == "__main__":
         num_main_loop_iterations_to_run = int(os.environ.get('NUM_ITERATIONS', '1'))
         if num_main_loop_iterations_to_run > 0:
             print(f"\\nاسکریپت با {num_main_loop_iterations_to_run} تکرار اجرا خواهد شد.")
-            # <<-- تغییرات اصلی برای کاهش تعداد دورها اینجا اعمال شد -->>
             run_main_loop_level_3(
                 total_main_loops=num_main_loop_iterations_to_run,
                 lvl2_iterations=3,
