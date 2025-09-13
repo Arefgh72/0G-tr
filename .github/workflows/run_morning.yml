@@ -4,7 +4,7 @@ on:
   workflow_dispatch:  # به شما اجازه اجرای دستی را هم می‌دهد
   schedule:
     # در ساعت 2:30 بامداد UTC اجرا می‌شود که معادل 6:00 صبح ایران است
-    - cron: '30 2 * * *'
+    - cron: '38 3 * * *'
 
 jobs:
   run-script:
@@ -26,5 +26,5 @@ jobs:
       - name: Run the main script for Morning
         env:
           MY_PRIVATE_KEY: ${{ secrets.MY_PRIVATE_KEY }}
-          NUM_ITERATIONS: '2' # اجرای صبح با ۱۰ تکرار
+          NUM_ITERATIONS: '1' # اجرای صبح با ۱۰ تکرار
         run: python main.py
