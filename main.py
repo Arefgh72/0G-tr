@@ -387,7 +387,7 @@ if __name__ == "__main__":
             run_main_loop_level_3(
                 total_main_loops=num_main_loop_iterations_to_run,
                 lvl2_iterations=3,
-                lvl1_interactions=3,
+                lvl1_interactions=1,
                 min_usdt=100.0,
                 max_usdt=1000.0
             )
