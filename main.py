@@ -386,10 +386,10 @@ if __name__ == "__main__":
             print(f"\\nاسکریپت با {num_main_loop_iterations_to_run} تکرار اجرا خواهد شد.")
             run_main_loop_level_3(
                 total_main_loops=num_main_loop_iterations_to_run,
-                lvl2_iterations=3,
+                lvl2_iterations=2,
                 lvl1_interactions=1,
                 min_usdt=100.0,
-                max_usdt=1000.0
+                max_usdt=20000.0
             )
         else:
             print("تعداد تکرارها 0 است. برنامه اجرا نمی‌شود.")
